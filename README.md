@@ -10,6 +10,9 @@
 *4. Настроить автоматическую загрузку по сети дистрибутива Ubuntu 24 c использованием UEFI
 
 #### Инструкция по выполнению домашнего задания
+
+__1. Настройка DHCP и TFTP-сервера__
+
 Подготовим Vagrantfile в котором будут описаны 2 виртуальные машины:
 • pxeserver (хост к которому будут обращаться клиенты для установки ОС)
 • pxeclient (хост, на котором будет проводиться установка)
@@ -74,4 +77,41 @@ root@pxeserver:~# tree /srv/tftp/
 Перезапускаем службу dnsmasq:
 ```
 root@pxeserver:~# systemctl restart dnsmasq
+```
+
+__2. Настройка Web-сервера__
+
+Для того, чтобы отдавать файлы по HTTP нам потребуется настроенный веб-сервер.
+
+Устанавливаем Web-сервер apache2:
+```
+root@pxeserver:~# apt install apache2
+```
+Cоздаём каталог /srv/images в котором будут храниться iso-образы для установки по сети:
+```
+root@pxeserver:~# mkdir /srv/images
+```
+Переходим в каталог /srv/images и скачиваем iso-образ ubuntu 24.04:
+```
+root@pxeserver:/srv/images# wget https://releases.ubuntu.com/noble/ubuntu-24.04-live-server-amd64.iso
+```
+Cоздаём файл /etc/apache2/sites-available/ks-server.conf и добавлем в него следующее содержимое:
+```apache
+#Указываем IP-адрес хоста и порт на котором будет работать Web-сервер
+<VirtualHost 10.0.0.20:80>
+
+  DocumentRoot /
+
+  # Указываем директорию /srv/images из которой будет загружаться iso-образ
+  <Directory /srv/images>
+    Options Indexes MultiViews
+    AllowOverride All
+    Require all granted
+  </Directory>
+
+</VirtualHost>
+```
+Активируем конфигурацию ks-server в apache:
+```
+root@pxeserver:~# a2ensite ks-server.conf
 ```
