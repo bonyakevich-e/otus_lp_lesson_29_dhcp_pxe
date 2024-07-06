@@ -115,3 +115,19 @@ Cоздаём файл /etc/apache2/sites-available/ks-server.conf и добав
 ```
 root@pxeserver:~# a2ensite ks-server.conf
 ```
+Вносим изменения в файл /srv/tftp/amd64/pxelinux.cfg/default:
+```
+DEFAULT install
+LABEL install
+  KERNEL linux
+  INITRD initrd
+  APPEND root=/dev/ram0 ramdisk_size=3000000 ip=dhcp iso-url=http://10.0.0.20/srv/images/ubuntu-24.04-live-server-amd64.iso autoinstall
+```
+В данном файле мы указываем что файлы linux и initrd будут забираться по tftp, а сам iso-образ ubuntu 24.04 будет скачиваться из нашего веб-сервера. 
+
+Из-за того, что образ достаточно большой (2.6G) и он сначала загружается в ОЗУ, необходимо указать размер ОЗУ до 3 гигабайт (root=/dev/ram0 ramdisk_size=3000000).
+
+Перезагружаем web-сервер apache:
+```
+systemctl restart apache2
+```
