@@ -121,9 +121,9 @@ root@pxeserver:~# a2ensite ks-server.conf
 ```
 DEFAULT install
 LABEL install
-  KERNEL linux
-  INITRD initrd
-  APPEND root=/dev/ram0 ramdisk_size=3000000 ip=dhcp iso-url=http://10.0.0.20/srv/images/ubuntu-24.04-live-server-amd64.iso autoinstall
+KERNEL linux
+INITRD initrd
+APPEND root=/dev/ram0 ramdisk_size=3000000 ip=dhcp iso-url=http://10.0.0.20/srv/images/ubuntu-24.04-live-server-amd64.iso autoinstall
 ```
 В данном файле мы указываем что файлы linux и initrd будут забираться по tftp, а сам iso-образ ubuntu 24.04 будет скачиваться из нашего веб-сервера. 
 
@@ -133,3 +133,88 @@ LABEL install
 ```
 systemctl restart apache2
 ```
+
+__3. Настройка автоматической установки Ubuntu 24.04__
+Создаём каталог для файлов с автоматической установкой:
+```
+root@pxeserver:~# mkdir /srv/ks
+```
+Cоздаём файл _/srv/ks/user-data_ и добавляем в него следующее содержимое:
+```
+#cloud-config
+autoinstall:
+apt:
+disable_components: []
+geoip: true
+preserve_sources_list: false
+primary:
+- arches:
+- amd64
+- i386
+uri: http://us.archive.ubuntu.com/ubuntu
+- arches:
+- default
+uri: http://ports.ubuntu.com/ubuntu-ports
+drivers:
+install: false
+identity:
+hostname: linux
+password: $6$sJgo6Hg5zXBwkkI8$btrEoWAb5FxKhajagWR49XM4EAOfO/
+Dr5bMrLOkGe3KkMYdsh7T3MU5mYwY2TIMJpVKckAwnZFs2ltUJ1abOZ.
+realname: otus
+username: otus
+kernel:
+package: linux-generic
+keyboard:
+layout: us
+toggle: null
+variant: ''
+locale: en_US.UTF-8
+network:
+ethernets:
+enp0s3:
+dhcp4: true
+enp0s8:
+dhcp4: true
+version: 2
+ssh:
+allow-pw: true
+authorized-keys: []
+install-server: true
+updates: security
+version: 1
+```
+Cоздаём файл с метаданными _/srv/ks/meta-data_:
+```
+root@pxeserver:~# touch /srv/ks/meta-data
+```
+Файл с метаданными хранит дополнительную информацию о хосте, мы сейчас не будем добавлять дополнительную информацию.
+
+В конфигурации веб-сервера добавим каталог /srv/ks идёнтично каталогу /srv/images:
+```
+root@pxeserver:~# vim /etc/apache2/sites-available/ks-server.conf
+
+...
+...
+  <Directory /srv/ks>
+    Options Indexes MultiViews
+    AllowOverride All
+    Require all granted
+  </Directory>
+...
+...
+```
+В файле _/srv/tftp/amd64/pxelinux.cfg/default_ добавляем параметры автоматической установки:
+```
+DEFAULT install
+LABEL install
+KERNEL linux
+INITRD initrd
+APPEND root=/dev/ram0 ramdisk_size=3000000 ip=dhcp iso-url=http://10.0.0.20/srv/images/ubuntu-24.04-live-server-amd64.iso autoinstall __ds=nocloud-net;s=http://10.0.0.20/srv/ks/__
+```
+Перезапускаем службы dnsmasq и apache2:
+```
+root@pxeserver:~# systemctl restart dnsmasq
+root@pxeserver:~# systemctl restart apache2
+```
+На этом настройка автоматической установки завершена. Теперь можно перезапустить ВМ pxeclient и мы должны увидеть автоматическую установку. После успешной установки выключаем ВМ и в её настройках ставим запуск ВМ из диска. После запуска нашей ВМ мы сможем залогиниться под пользователем otus.
