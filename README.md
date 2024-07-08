@@ -20,17 +20,17 @@ __1. Настройка DHCP и TFTP-сервера__
 • pxeclient (хост, на котором будет проводиться установка)
 
 Создаем виртуальные машины:
-```
+```console
 $ vagrant up
 ```
 Для того, чтобы клиент мог получить ip-адрес нам требуется DHCP-сервер. Для того, чтобы клиент мог получить файл pxelinux.0 нам потребуется TFTP-сервер. Утилита dnsmasq совмещает в себе сразу и DHCP и TFTP-сервер.
 Настраиваем сервер. Отключаем firewall:
-```
+```console
 root@pxeserver:~# systemctl stop ufw
 root@pxeserver:~# systemctl disable ufw
 ```
 Обновляем apt кэш и устанавливаем dnsmasq:
-```
+```console
 root@pxeserver:~# apt update
 root@pxeserver:~# apt install dnsmasq
 ```
@@ -52,16 +52,16 @@ enable-tftp
 tftp-root=/srv/tftp/amd64
 ```
 Создаём каталоги для файлов TFTP-сервера:
-```
+```console
 root@pxeserver:~# mkdir -p /srv/tftp
 ```
 Cкачиваем файлы для сетевой установки Ubuntu 24.04 и распаковываем их в каталог /srv/tftp:
-```
+```console
 root@pxeserver:~# wget https://releases.ubuntu.com/noble/ubuntu-24.04-netboot-amd64.tar.gz
 root@pxeserver:~# tar -xzvf ubuntu-24.04-netboot-amd64.tar.gz  -C /srv/tftp
 ```
 В каталоге видим следующие файлы:
-```
+```console
 root@pxeserver:~# tree /srv/tftp/
 /srv/tftp/
 └── amd64
@@ -77,7 +77,7 @@ root@pxeserver:~# tree /srv/tftp/
         └── default
 ```
 Перезапускаем службу dnsmasq:
-```
+```console
 root@pxeserver:~# systemctl restart dnsmasq
 ```
 
@@ -86,15 +86,15 @@ __2. Настройка Web-сервера__
 Для того, чтобы отдавать файлы по HTTP нам потребуется настроенный веб-сервер.
 
 Устанавливаем Web-сервер apache2:
-```
+```console
 root@pxeserver:~# apt install apache2
 ```
 Cоздаём каталог /srv/images в котором будут храниться iso-образы для установки по сети:
-```
+```console
 root@pxeserver:~# mkdir /srv/images
 ```
 Переходим в каталог /srv/images и скачиваем iso-образ ubuntu 24.04:
-```
+```console
 root@pxeserver:/srv/images# wget https://releases.ubuntu.com/noble/ubuntu-24.04-live-server-amd64.iso
 ```
 Cоздаём файл /etc/apache2/sites-available/ks-server.conf и добавлем в него следующее содержимое:
@@ -114,7 +114,7 @@ Cоздаём файл /etc/apache2/sites-available/ks-server.conf и добав
 </VirtualHost>
 ```
 Активируем конфигурацию ks-server в apache:
-```
+```console
 root@pxeserver:~# a2ensite ks-server.conf
 ```
 Вносим изменения в файл /srv/tftp/amd64/pxelinux.cfg/default:
@@ -130,17 +130,18 @@ APPEND root=/dev/ram0 ramdisk_size=3000000 ip=dhcp iso-url=http://10.0.0.20/srv/
 Из-за того, что образ достаточно большой (2.6G) и он сначала загружается в ОЗУ, необходимо указать размер ОЗУ до 3 гигабайт (root=/dev/ram0 ramdisk_size=3000000).
 
 Перезагружаем web-сервер apache:
-```
-systemctl restart apache2
+```console
+root@pxeserver:~# systemctl restart apache2
 ```
 
 __3. Настройка автоматической установки Ubuntu 24.04__
+
 Создаём каталог для файлов с автоматической установкой:
-```
+```console
 root@pxeserver:~# mkdir /srv/ks
 ```
 Cоздаём файл _/srv/ks/user-data_ и добавляем в него следующее содержимое:
-```
+```yaml
 #cloud-config
 autoinstall:
 apt:
@@ -185,15 +186,16 @@ updates: security
 version: 1
 ```
 Cоздаём файл с метаданными _/srv/ks/meta-data_:
-```
+```console
 root@pxeserver:~# touch /srv/ks/meta-data
 ```
 Файл с метаданными хранит дополнительную информацию о хосте, мы сейчас не будем добавлять дополнительную информацию.
 
 В конфигурации веб-сервера добавим каталог /srv/ks идёнтично каталогу /srv/images:
-```
+```console
 root@pxeserver:~# vim /etc/apache2/sites-available/ks-server.conf
-
+```
+```apache
 ...
 ...
   <Directory /srv/ks>
@@ -213,7 +215,7 @@ INITRD initrd
 APPEND root=/dev/ram0 ramdisk_size=3000000 ip=dhcp iso-url=http://10.0.0.20/srv/images/ubuntu-24.04-live-server-amd64.iso autoinstall __ds=nocloud-net;s=http://10.0.0.20/srv/ks/__
 ```
 Перезапускаем службы dnsmasq и apache2:
-```
+```console
 root@pxeserver:~# systemctl restart dnsmasq
 root@pxeserver:~# systemctl restart apache2
 ```
