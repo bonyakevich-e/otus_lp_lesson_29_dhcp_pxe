@@ -165,46 +165,19 @@ Cоздаём файл _/srv/ks/user-data_ и добавляем в него с�
 ```yaml
 #cloud-config
 autoinstall:
-apt:
-disable_components: []
-geoip: true
-preserve_sources_list: false
-primary:
-- arches:
-- amd64
-- i386
-uri: http://us.archive.ubuntu.com/ubuntu
-- arches:
-- default
-uri: http://ports.ubuntu.com/ubuntu-ports
-drivers:
-install: false
-identity:
-hostname: linux
-password: $6$sJgo6Hg5zXBwkkI8$btrEoWAb5FxKhajagWR49XM4EAOfO/Dr5bMrLOkGe3KkMYdsh7T3MU5mYwY2TIMJpVKckAwnZFs2ltUJ1abOZ.
-realname: otus
-username: otus
-kernel:
-package: linux-generic
-keyboard:
-layout: us
-toggle: null
-variant: ''
-locale: en_US.UTF-8
-network:
-ethernets:
-enp0s3:
-dhcp4: true
-enp0s8:
-dhcp4: true
-version: 2
-ssh:
-allow-pw: true
-authorized-keys: []
-install-server: true
-updates: security
-version: 1
+  identity:
+    hostname: linux
+    password: $6$sJgo6Hg5zXBwkkI8$btrEoWAb5FxKhajagWR49XM4EAOfO/Dr5bMrLOkGe3KkMYdsh7T3MU5mYwY2TIMJpVKckAwnZFs2ltUJ1abOZ.
+    username: otus
+  ssh:
+    allow-pw: true
+    install-server: true
+  version: 1
+  shutdown: poweroff
 ```
+> [!NOTE]
+> Файл _/srv/ks/user-data_ имеет синтаксис yaml, соответственно нужно соблюдать отступы
+
 Cоздаём файл с метаданными _/srv/ks/meta-data_:
 ```console
 root@pxeserver:~# touch /srv/ks/meta-data
