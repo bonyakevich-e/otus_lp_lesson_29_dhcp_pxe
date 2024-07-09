@@ -183,7 +183,7 @@ root@pxeserver:~# touch /srv/ks/meta-data
 ```
 Файл с метаданными хранит дополнительную информацию о хосте, мы сейчас не будем добавлять дополнительную информацию.
 
-В конфигурации веб-сервера добавим каталог /srv/ks идёнтично каталогу /srv/images:
+В конфигурации веб-сервера добавим каталог /srv/ks идентично каталогу /srv/images:
 ```console
 root@pxeserver:~# vim /etc/apache2/sites-available/ks-server.conf
 ```
